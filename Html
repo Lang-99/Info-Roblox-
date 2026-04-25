@@ -1,0 +1,85 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Roblox User Info</title>
+  <style>
+    body { font-family: Arial; background:#0f172a; color:white; text-align:center; }
+    .box { background:#1e293b; padding:20px; margin:20px auto; width:300px; border-radius:10px; }
+    input, button { padding:10px; margin:5px; width:90%; border:none; border-radius:5px; }
+    button { background:#38bdf8; color:black; cursor:pointer; }
+  </style>
+</head>
+<body><h1>Roblox Username Info</h1><div class="box" id="authBox">
+  <h3>Register / Login</h3>
+  <input id="username" placeholder="Username">
+  <input id="password" type="password" placeholder="Password">
+  <button onclick="register()">Register</button>
+  <button onclick="login()">Login</button>
+</div><div class="box" id="userBox" style="display:none;">
+  <h3 id="welcome"></h3>
+</div><div class="box">
+  <h3>Check Roblox User</h3>
+  <input id="rbxUser" placeholder="Enter Roblox Username">
+  <button onclick="getUser()">Search</button>
+  <p id="result"></p>
+</div><script>
+// Simple local database
+function register(){
+  let user = document.getElementById('username').value;
+  let pass = document.getElementById('password').value;
+
+  if(!user || !pass) return alert("Isi semua!");
+
+  localStorage.setItem("user_"+user, pass);
+  alert("Registered!");
+}
+
+function login(){
+  let user = document.getElementById('username').value;
+  let pass = document.getElementById('password').value;
+
+  let saved = localStorage.getItem("user_"+user);
+
+  if(saved === pass){
+    document.getElementById('authBox').style.display = 'none';
+    document.getElementById('userBox').style.display = 'block';
+    document.getElementById('welcome').innerText = "Welcome " + user;
+  } else {
+    alert("Wrong login!");
+  }
+}
+
+async function getUser(){
+  let username = document.getElementById('rbxUser').value;
+  if(!username) return;
+
+  try{
+    let res = await fetch(`https://users.roblox.com/v1/usernames/users`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ usernames:[username] })
+    });
+
+    let data = await res.json();
+    let id = data.data[0].id;
+
+    let infoRes = await fetch(`https://users.roblox.com/v1/users/${id}`);
+    let info = await infoRes.json();
+
+    let created = new Date(info.created);
+    let now = new Date();
+    let diffDays = Math.floor((now - created) / (1000*60*60*24));
+
+    document.getElementById('result').innerHTML = `
+      ID: ${info.id}<br>
+      Username: ${info.name}<br>
+      Join Date: ${created.toDateString()}<br>
+      Days since join: ${diffDays}
+    `;
+
+  } catch(e){
+    document.getElementById('result').innerText = "User not found";
+  }
+}
+</script></body>
+</html>
